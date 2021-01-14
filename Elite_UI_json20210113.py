@@ -2633,7 +2633,7 @@ class EliteUISDK(QMainWindow):
             ret = self.sock.recv(1024)
             jdata = json.loads(str(ret,"utf-8"))
             currentpos = json.loads(jdata["result"])
-            print(currentpos)
+            #print(currentpos)
             
     #endregion
     #endregion
