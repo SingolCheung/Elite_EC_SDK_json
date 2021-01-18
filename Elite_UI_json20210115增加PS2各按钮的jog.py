@@ -766,6 +766,8 @@ class EliteUISDK(QMainWindow):
         self.json_btn_leftstick_updown_value = 0
         self.json_btn_leftstick_leftright_value = 0
         self.json_btn_rightstick_updown_value = 0
+        self.json_setservo_once = 0
+        self.json_setcurrentcoord_once = 0
         #self.input_time.resize(100,800)
         #self.value_8056 = 0
         # self.ex = Constant(self)
@@ -1765,25 +1767,53 @@ class EliteUISDK(QMainWindow):
     # connect到json_BtnL2()，字符串值传入到data
     # 再把data转换成float复制给对应的按钮self.json_btnl2_value
     def Json_BtnL2(self,data):
-        self.json_btn_l2_value = float(data)
+        self.json_btn_l2_value = int(data)
         if self.SDK_json_on == 1 and self.json_btn_l2_value == 0 and self.json_ps2_button_on == 1:
             self.json_ps2_button_on = 0
             #stop
+            method = "stop"
+            params = []
+            id = 14
+            sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+            self.sock.sendall(bytes(sendStr,"utf-8"))
+            ret = self.sock.recv(1024)
+            jdata = json.loads(str(ret,"utf-8"))
             print("stop")
         if self.SDK_json_on == 1 and self.json_btn_l2_value == 1:
             self.json_ps2_button_on = 1
-            print("self.json_btn_l2_value",self.json_btn_l2_value)
+            method = "jog"
+            params = json.dumps({"index":0})
+            id = 15
+            sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+            self.sock.sendall(bytes(sendStr,"utf-8"))
+            ret = self.sock.recv(1024)
+            jdata = json.loads(str(ret,"utf-8"))
+            #print("self.json_btn_l2_value",self.json_btn_l2_value)
     def Json_BtnL1(self,data):
-        self.json_btn_l1_value = float(data)
+        self.json_btn_l1_value = int(data)
         if self.SDK_json_on == 1 and self.json_btn_l1_value == 0 and self.json_ps2_button_on == 2:
             self.json_ps2_button_on = 0
             #stop
+            method = "stop"
+            params = []
+            id = 16
+            sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+            self.sock.sendall(bytes(sendStr,"utf-8"))
+            ret = self.sock.recv(1024)
+            jdata = json.loads(str(ret,"utf-8"))
             print("stop")
         if self.SDK_json_on == 1 and self.json_btn_l1_value == 1:
             self.json_ps2_button_on = 2
-            print("self.json_btn_l1_value",self.json_btn_l1_value)
+            method = "jog"
+            params = json.dumps({"index":1})
+            id = 17
+            sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+            self.sock.sendall(bytes(sendStr,"utf-8"))
+            ret = self.sock.recv(1024)
+            jdata = json.loads(str(ret,"utf-8"))
+            #print("self.json_btn_l1_value",self.json_btn_l1_value)
     def Json_BtnLeftUp(self,data):
-        self.json_btn_left_up_value = float(data)
+        self.json_btn_left_up_value = int(data)
         if self.SDK_json_on == 1 and self.json_btn_left_up_value == 0 and self.json_ps2_button_on == 3:
             self.json_ps2_button_on = 0
             #stop
@@ -1795,22 +1825,83 @@ class EliteUISDK(QMainWindow):
         self.json_btn_left_left_value = float(data)
         if self.SDK_json_on == 1 and self.json_btn_left_left_value == 0 and self.json_ps2_button_on == 4:
             self.json_ps2_button_on = 0
+            self.json_setcurrentcoord_once = 0
             #stop
-            print("stop")
+            print("release set currentcoord button")
         if self.SDK_json_on == 1 and self.json_btn_left_left_value == 1:
             self.json_ps2_button_on = 4
-            print("self.json_btn_left_left_value",self.json_btn_left_left_value)
+            if self.json_setservo_once == 0 and self.json_setcurrentcoord_once == 0:
+                #获取当前坐标系
+                method = "getCurrentCoord"
+                params = []
+                id = 36
+                sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+                self.sock.sendall(bytes(sendStr,"utf-8"))
+                ret = self.sock.recv(1024)
+                jdata = json.loads(str(ret,"utf-8"))
+                self.currentcoord_value = json.loads(jdata["result"])
+                if self.currentcoord_value == 0 and self.json_setcurrentcoord_once == 0:
+                    method = "setCurrentCoord"
+                    params = json.dumps({"coord_mode":1})
+                    id = 37
+                    sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+                    self.sock.sendall(bytes(sendStr,"utf-8"))
+                    ret = self.sock.recv(1024)
+                    jdata = json.loads(str(ret,"utf-8"))
+                    self.setcurrentcoord_value = json.loads(jdata["result"])
+                    self.json_setcurrentcoord_once = 1
+                if self.currentcoord_value == 1 and self.json_setcurrentcoord_once == 0:
+                    method = "setCurrentCoord"
+                    params = json.dumps({"coord_mode":0})
+                    id = 38
+                    sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+                    self.sock.sendall(bytes(sendStr,"utf-8"))
+                    ret = self.sock.recv(1024)
+                    jdata = json.loads(str(ret,"utf-8"))
+                    self.setcurrentcoord_value = json.loads(jdata["result"])
+                    self.json_setcurrentcoord_once = 1
+            #print("self.json_btn_left_left_value",self.json_btn_left_left_value)
     def Json_BtnLeftRight(self,data):
-        self.json_btn_left_right_value = float(data)
+        self.json_btn_left_right_value = int(data)
         if self.SDK_json_on == 1 and self.json_btn_left_right_value == 0 and self.json_ps2_button_on == 5:
             self.json_ps2_button_on = 0
+            self.json_setservo_once = 0
             #stop
-            print("stop")
+            print("set servo button release ")
         if self.SDK_json_on == 1 and self.json_btn_left_right_value == 1:
             self.json_ps2_button_on = 5
-            print("self.json_btn_left_right_value",self.json_btn_left_right_value)
+            if self.json_setservo_once == 0:
+                #获取伺服使能
+                method = "getServoStatus"
+                params = []
+                id = 18
+                sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+                self.sock.sendall(bytes(sendStr,"utf-8"))
+                ret = self.sock.recv(1024)
+                jdata = json.loads(str(ret,"utf-8"))
+                self.servo_status_value = json.loads(jdata["result"])
+                if self.servo_status_value == 0 and self.json_setservo_once == 0:
+                    method = "set_servo_status"
+                    params = json.dumps({"status":1})
+                    id = 19
+                    sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+                    self.sock.sendall(bytes(sendStr,"utf-8"))
+                    ret = self.sock.recv(1024)
+                    jdata = json.loads(str(ret,"utf-8"))
+                    self.json_setservo_once = 1
+                    #self.setservoon_status_value = json.loads(jdata["result"])
+                if self.servo_status_value == 1 and self.json_setservo_once == 0:
+                    method = "set_servo_status"
+                    params = json.dumps({"status":0})
+                    id = 20
+                    sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+                    self.sock.sendall(bytes(sendStr,"utf-8"))
+                    ret = self.sock.recv(1024)
+                    jdata = json.loads(str(ret,"utf-8"))
+                    self.json_setservo_once = 1
+            #print("self.json_btn_left_right_value",self.json_btn_left_right_value)
     def Json_BtnLeftDown(self,data):
-        self.json_btn_left_down_value = float(data)
+        self.json_btn_left_down_value = int(data)
         if self.SDK_json_on == 1 and self.json_btn_left_down_value == 0 and self.json_ps2_button_on == 6:
             self.json_ps2_button_on = 0
             #stop
@@ -1819,25 +1910,53 @@ class EliteUISDK(QMainWindow):
             self.json_ps2_button_on = 6
             print("self.json_btn_left_down_value",self.json_btn_left_down_value)
     def Json_BtnR2(self,data):
-        self.json_btn_r2_value = float(data)
+        self.json_btn_r2_value = int(data)
         if self.SDK_json_on == 1 and self.json_btn_r2_value == 0 and self.json_ps2_button_on == 7:
             self.json_ps2_button_on = 0
             #stop
+            method = "stop"
+            params = []
+            id = 26
+            sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+            self.sock.sendall(bytes(sendStr,"utf-8"))
+            ret = self.sock.recv(1024)
+            jdata = json.loads(str(ret,"utf-8"))
             print("stop")
         if self.SDK_json_on == 1 and self.json_btn_r2_value == 1:
             self.json_ps2_button_on = 7
-            print("self.json_btn_r2_value",self.json_btn_r2_value)
+            method = "jog"
+            params = json.dumps({"index":10})
+            id = 27
+            sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+            self.sock.sendall(bytes(sendStr,"utf-8"))
+            ret = self.sock.recv(1024)
+            jdata = json.loads(str(ret,"utf-8"))
+            #print("self.json_btn_r2_value",self.json_btn_r2_value)
     def Json_BtnR1(self,data):
-        self.json_btn_r1_value = float(data)
+        self.json_btn_r1_value = int(data)
         if self.SDK_json_on == 1 and self.json_btn_r1_value == 0 and self.json_ps2_button_on == 8:
             self.json_ps2_button_on = 0
             #stop
+            method = "stop"
+            params = []
+            id = 28
+            sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+            self.sock.sendall(bytes(sendStr,"utf-8"))
+            ret = self.sock.recv(1024)
+            jdata = json.loads(str(ret,"utf-8"))
             print("stop")
         if self.SDK_json_on == 1 and self.json_btn_r1_value == 1:
             self.json_ps2_button_on = 8
-            print("self.json_btn_r1_value",self.json_btn_r1_value)
+            method = "jog"
+            params = json.dumps({"index":11})
+            id = 29
+            sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+            self.sock.sendall(bytes(sendStr,"utf-8"))
+            ret = self.sock.recv(1024)
+            jdata = json.loads(str(ret,"utf-8"))
+            #print("self.json_btn_r1_value",self.json_btn_r1_value)
     def Json_BtnRightUp(self,data):
-        self.json_btn_right_up_value = float(data)
+        self.json_btn_right_up_value = int(data)
         if self.SDK_json_on == 1 and self.json_btn_right_up_value == 0 and self.json_ps2_button_on == 9:
             self.json_ps2_button_on = 0
             #stop
@@ -1846,7 +1965,7 @@ class EliteUISDK(QMainWindow):
             self.json_ps2_button_on = 9
             print("self.json_btn_right_up_value",self.json_btn_right_up_value)
     def Json_BtnRightLeft(self,data):
-        self.json_btn_right_left_value = float(data)
+        self.json_btn_right_left_value = int(data)
         if self.SDK_json_on == 1 and self.json_btn_right_left_value == 0 and self.json_ps2_button_on == 10:
             self.json_ps2_button_on = 0
             #stop
@@ -1859,7 +1978,7 @@ class EliteUISDK(QMainWindow):
             self.SDK_json_on = 0
         '''
     def Json_BtnRightRight(self,data):
-        self.json_btn_right_right_value = float(data)
+        self.json_btn_right_right_value = int(data)
         if self.SDK_json_on == 1 and self.json_btn_right_right_value == 0 and self.json_ps2_button_on == 11:
             self.json_ps2_button_on = 0
             #stop
@@ -1868,7 +1987,7 @@ class EliteUISDK(QMainWindow):
             self.json_ps2_button_on = 11
             print("self.json_btn_right_right_value",self.json_btn_right_right_value)
     def Json_BtnRightDown(self,data):
-        self.json_btn_right_down_value = float(data)
+        self.json_btn_right_down_value = int(data)
         if self.SDK_json_on == 1 and self.json_btn_right_down_value == 0 and self.json_ps2_button_on == 12:
             self.json_ps2_button_on = 0
             #stop
@@ -1881,49 +2000,133 @@ class EliteUISDK(QMainWindow):
         if self.SDK_json_on == 1 and self.json_btn_leftstick_updown_value < 0.1 and self.json_btn_leftstick_updown_value > -0.1 and self.json_ps2_button_on == 13:
             self.json_ps2_button_on = 0
             #stop
+            method = "stop"
+            params = []
+            id = 20
+            sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+            self.sock.sendall(bytes(sendStr,"utf-8"))
+            ret = self.sock.recv(1024)
+            jdata = json.loads(str(ret,"utf-8"))
             print("stop")
         if self.SDK_json_on == 1 and self.json_btn_leftstick_updown_value > 0.1:
             self.json_ps2_button_on = 13
-            print("self.json_btn_leftstick_updown_value",self.json_btn_leftstick_updown_value)
+            method = "jog"
+            params = json.dumps({"index":2})
+            id = 21
+            sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+            self.sock.sendall(bytes(sendStr,"utf-8"))
+            ret = self.sock.recv(1024)
+            jdata = json.loads(str(ret,"utf-8"))
+            #print("self.json_btn_leftstick_updown_value",self.json_btn_leftstick_updown_value)
         if self.SDK_json_on == 1 and self.json_btn_leftstick_updown_value < -0.1:
             self.json_ps2_button_on = 13
-            print("self.json_btn_leftstick_updown_value",self.json_btn_leftstick_updown_value)
+            method = "jog"
+            params = json.dumps({"index":3})
+            id = 22
+            sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+            self.sock.sendall(bytes(sendStr,"utf-8"))
+            ret = self.sock.recv(1024)
+            jdata = json.loads(str(ret,"utf-8"))
+            #print("self.json_btn_leftstick_updown_value",self.json_btn_leftstick_updown_value)
     def Json_BtnLeftstickLeftRight(self,data):
         self.json_btn_leftstick_leftright_value = float(data)
         if self.SDK_json_on == 1 and self.json_btn_leftstick_leftright_value < 0.1 and self.json_btn_leftstick_leftright_value > -0.1 and self.json_ps2_button_on == 14:
             self.json_ps2_button_on = 0
             #stop
+            method = "stop"
+            params = []
+            id = 23
+            sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+            self.sock.sendall(bytes(sendStr,"utf-8"))
+            ret = self.sock.recv(1024)
+            jdata = json.loads(str(ret,"utf-8"))
             print("stop")
         if self.SDK_json_on == 1 and self.json_btn_leftstick_leftright_value > 0.1:
             self.json_ps2_button_on = 14
-            print("self.json_btn_leftstick_leftright_value",self.json_btn_leftstick_leftright_value)
+            method = "jog"
+            params = json.dumps({"index":4})
+            id = 24
+            sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+            self.sock.sendall(bytes(sendStr,"utf-8"))
+            ret = self.sock.recv(1024)
+            jdata = json.loads(str(ret,"utf-8"))
+            #print("self.json_btn_leftstick_leftright_value",self.json_btn_leftstick_leftright_value)
         if self.SDK_json_on == 1 and self.json_btn_leftstick_leftright_value < -0.1:
             self.json_ps2_button_on = 14
-            print("self.json_btn_leftstick_leftright_value",self.json_btn_leftstick_leftright_value)
+            method = "jog"
+            params = json.dumps({"index":5})
+            id = 25
+            sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+            self.sock.sendall(bytes(sendStr,"utf-8"))
+            ret = self.sock.recv(1024)
+            jdata = json.loads(str(ret,"utf-8"))
+            #print("self.json_btn_leftstick_leftright_value",self.json_btn_leftstick_leftright_value)
     def Json_BtnRightstickUpDown(self,data):
         self.json_btn_rightstick_updown_value = float(data)
         if self.SDK_json_on == 1 and self.json_btn_rightstick_updown_value < 0.1 and self.json_btn_rightstick_updown_value > -0.1 and self.json_ps2_button_on == 15:
             self.json_ps2_button_on = 0
             #stop
+            method = "stop"
+            params = []
+            id = 30
+            sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+            self.sock.sendall(bytes(sendStr,"utf-8"))
+            ret = self.sock.recv(1024)
+            jdata = json.loads(str(ret,"utf-8"))
             print("stop")
         if self.SDK_json_on == 1 and self.json_btn_rightstick_updown_value > 0.1:
             self.json_ps2_button_on = 15
-            print("self.json_btn_rightstick_updown_value",self.json_btn_rightstick_updown_value)
+            method = "jog"
+            params = json.dumps({"index":6})
+            id = 31
+            sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+            self.sock.sendall(bytes(sendStr,"utf-8"))
+            ret = self.sock.recv(1024)
+            jdata = json.loads(str(ret,"utf-8"))
+            #print("self.json_btn_rightstick_updown_value",self.json_btn_rightstick_updown_value)
         if self.SDK_json_on == 1 and self.json_btn_rightstick_updown_value < -0.1:
             self.json_ps2_button_on = 15
-            print("self.json_btn_rightstick_updown_value",self.json_btn_rightstick_updown_value)
+            method = "jog"
+            params = json.dumps({"index":7})
+            id = 32
+            sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+            self.sock.sendall(bytes(sendStr,"utf-8"))
+            ret = self.sock.recv(1024)
+            jdata = json.loads(str(ret,"utf-8"))
+            #print("self.json_btn_rightstick_updown_value",self.json_btn_rightstick_updown_value)
     def Json_BtnRightstickLeftRight(self,data):
         self.json_btn_rightstick_leftright_value = float(data)
         if self.SDK_json_on == 1 and self.json_btn_rightstick_leftright_value < 0.1 and self.json_btn_rightstick_leftright_value > -0.1 and self.json_ps2_button_on == 16:
             self.json_ps2_button_on = 0
             #stop
+            method = "stop"
+            params = []
+            id = 33
+            sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+            self.sock.sendall(bytes(sendStr,"utf-8"))
+            ret = self.sock.recv(1024)
+            jdata = json.loads(str(ret,"utf-8"))
             print("stop")
         if self.SDK_json_on == 1 and self.json_btn_rightstick_leftright_value > 0.1:
             self.json_ps2_button_on = 16
-            print("self.json_btn_rightstick_leftright_value",self.json_btn_rightstick_leftright_value)
+            method = "jog"
+            params = json.dumps({"index":8})
+            id = 34
+            sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+            self.sock.sendall(bytes(sendStr,"utf-8"))
+            ret = self.sock.recv(1024)
+            jdata = json.loads(str(ret,"utf-8"))
+            #print("self.json_btn_rightstick_leftright_value",self.json_btn_rightstick_leftright_value)
         if self.SDK_json_on == 1 and self.json_btn_rightstick_leftright_value < -0.1:
             self.json_ps2_button_on = 16
-            print("self.json_btn_rightstick_leftright_value",self.json_btn_rightstick_leftright_value)
+            method = "jog"
+            params = json.dumps({"index":9})
+            id = 35
+            sendStr="{{\"method\":\"{0}\",\"params\":{1},\"jsonrpc\":\"2.0\",\"id\":{2}}}".format(method,params,id)+"\n"
+            self.sock.sendall(bytes(sendStr,"utf-8"))
+            ret = self.sock.recv(1024)
+            jdata = json.loads(str(ret,"utf-8"))
+            #print("self.json_btn_rightstick_leftright_value",self.json_btn_rightstick_leftright_value)
     #endregion
 
     #region SDK各按钮对应的SDK函数(API)
@@ -2134,7 +2337,7 @@ class EliteUISDK(QMainWindow):
     #region json协议各按钮对应的method(接口方法)
     def json_buttonClicked(self):
         sender = self.sender()
-        if self.SDK_json_on == -1 and self.SDK_json_on == 0 and sender.text() == "CreateSocket":
+        if self.SDK_json_on == -1 or self.SDK_json_on == 0 and sender.text() == "CreateSocket":
             Robot_IP = "192.168.1.200"
             TCP_Port = 8055
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
